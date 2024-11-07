@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обновление или Удаление Тура</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<div class="container mt-5">
+    <h1 class="text-center">Обновление или Удаление Тура</h1>
+
+    <div class="mb-4">
+        <label for="tourId">Введите ID тура:</label>
+        <input type="text" id="tourId" class="form-control" placeholder="ID тура">
+        <button id="loadTourBtn" class="btn btn-primary mt-2">Загрузить Тур</button>
+    </div>
+
+    <div id="tourForm" style="display: none;">
+        <h3>Обновить Тур</h3>
+        <form id="updateTourForm">
+            <div class="form-group">
+                <label for="tourName">Название:</label>
+                <input type="text" id="tourName" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="tourDescription">Описание:</label>
+                <textarea id="tourDescription" class="form-control" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="tourPrice">Цена:</label>
+                <input type="number" id="tourPrice" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-success">Обновить Тур</button>
+            <button id="deleteTourBtn" type="button" class="btn btn-danger ml-2">Удалить Тур</button>
+        </form>
+    </div>
+
+    <h3 class="mt-5">Список всех туров</h3>
+    <div id="tourList" class="row"></div>
+
+</div>
+
+<script>
+    document.getElementById('loadTourBtn').addEventListener('click', async () => {
+        const tourId = document.getElementById('tourId').value;
+        try {
+            const response = await fetch(`/rest/tour/${tourId}`);
+            if (!response.ok) {
+                throw new Error('Тур не найден');
+            }
+            const tour = await response.json();
+            document.getElementById('tourName').value = tour.name;
+            document.getElementById('tourDescription').value = tour.description;
+            document.getElementById('tourPrice').value = tour.price;
+            document.getElementById('tourForm').style.display = 'block';
+        } catch (error) {
+            alert(error.message);
+        }
+    });
+
+    async function loadAllTours() {
+        try {
+            const response = await fetch('/rest/tour');
+            if (!response.ok) {
+                throw new Error('Ошибка при загрузке туров');
+            }
+            const tours = await response.json();
+            displayTours(tours);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    function displayTours(tours) {
+        const tourList = document.getElementById('tourList');
+        tourList.innerHTML = '';
+
+        tours.forEach(tour => {
+            const col = document.createElement('div');
+            col.className = 'col-md-4 mb-4';
+            col.innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">${tour.id}</h5>
+                        <p class="card-text">${tour.name}</p>
+                        <p class="card-text">${tour.description}</p>
+                        <p class="card-text"><strong>Цена:</strong> ${tour.price} руб.</p>
+                        <button onclick='selectTour(${tour.id})' class='btn btn-info'>Выбрать</button>
+                    </div>
+                </div>
+            `;
+            tourList.appendChild(col);
+        });
+    }
+
+    function selectTour(tourId) {
+        document.getElementById('tourId').value = tourId;
+        loadTourById(tourId);
+    }
+
+    async function loadTourById(tourId) {
+        try {
+            const response = await fetch(`/rest/tour/${tourId}`);
+            if (!response.ok) {
+                throw new Error('Тур не найден');
+            }
+            const tour = await response.json();
+            document.getElementById('tourName').value = tour.name;
+            document.getElementById('tourDescription').value = tour.description;
+            document.getElementById('tourPrice').value = tour.price;
+            document.getElementById('tourForm').style.display = 'block';
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    document.getElementById('updateTourForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const tourId = document.getElementById('tourId').value;
+        const updatedTour = {
+            name: document.getElementById('tourName').value,
+            description: document.getElementById('tourDescription').value,
+            price: document.getElementById('tourPrice').value
+        };
+        console.log(tourId);
+        console.log(JSON.stringify(updatedTour));
+        try {
+            const response = await fetch(`/rest/tour/${tourId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedTour)
+            });
+            
+            if (!response.ok) {
+                throw new Error('Ошибка при обновлении тура');
+            }
+            
+            alert('Тур успешно обновлён!');
+            loadAllTours();
+        } catch (error) {
+            alert(error.message);
+        }
+    });
+
+    document.getElementById('deleteTourBtn').addEventListener('click', async () => {
+        const tourId = document.getElementById('tourId').value;
+
+        if (!confirm(`Вы уверены, что хотите удалить тур с ID ${tourId}?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/rest/tour/${tourId}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+                throw new Error('Ошибка при удалении тура');
+            }
+            
+            alert('Тур успешно удалён!');
+            loadAllTours();
+            document.getElementById('tourForm').style.display = 'none';
+            document.getElementById('tourId').value = '';
+        } catch (error) {
+            alert(error.message);
+        }
+    });
+
+    window.onload = loadAllTours;
+
+</script>
+
+</body>
+</html>

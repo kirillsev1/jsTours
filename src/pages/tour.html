@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Главная страница</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script>
+        let currentPage = 0;
+        const urlPath = window.location.pathname;
+        const id = urlPath.split('/').pop();
+
+
+        async function loadReviews(page = 0) {
+            const tour = await fetch(`/tour_id/${id}`);
+            const tour_data = await tour.json();
+            document.getElementById('title').innerHTML = `<h3> id: ${tour_data.id} name: ${tour_data.name}</h3>`;
+            document.getElementById('description').innerHTML = ` ${tour_data.description}`;
+
+            const response = await fetch(`/review/${id}/${page}`);
+            const reviews = await response.json();
+            const reviewsList = document.getElementById('reviewsList');
+            reviewsList.innerHTML = ''; 
+            reviews.forEach(review => {
+                const reviewItem = document.createElement('div');
+                reviewItem.className = 'card mb-3';
+                reviewItem.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title">id: ${review.id}</h5>
+                        <p class="card-text">user_id: ${review.user_id} rating: ${review.rating}</p>
+                        <p class="card-text">content: ${review.comment}</p>
+                    </div>
+                `;
+                reviewsList.appendChild(reviewItem);
+            });
+
+            currentPage = page;
+            updatePaginationButtons();
+        }
+
+        function updatePaginationButtons() {
+            document.getElementById('prevPage').disabled = currentPage === 0;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('prevPage').addEventListener('click', () => {
+                if (currentPage > 0) loadReviews(currentPage - 1);
+            });
+            document.getElementById('nextPage').addEventListener('click', () => {
+                loadReviews(currentPage + 1);
+            });
+            loadReviews();
+        });
+    </script>
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <h1 class="mb-4">Страница тура:</h1>
+    </div>
+    <div class="container mt-5">
+        <h2 class="mb-4">Тур: </h2>
+        <h3 id="title" class="mb-4"></h3>
+        <h2 class="mb-4">Описание:</h2>
+        <h3 id="description" class="mb-4"></h3>
+        <h2 class="mb-4">Комментарии:</h2>
+        <div id="reviewsList" class="list-group"></div>
+        <div class="mt-4">
+            <button id="prevPage" class="btn btn-primary me-2" disabled>Предыдущая</button>
+            <button id="nextPage" class="btn btn-primary">Следующая</button>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
